@@ -1,8 +1,10 @@
 #!/bin/bash
-export KERNEL_DIR="/mnt/Building/android_kernel_oneplus_sm8250"
-export KBUILD_OUTPUT="/mnt/Building/android_kernel_oneplus_sm8250/out"
+export KERNEL_DIR="/mnt/Building/infected-kernel"
+export KBUILD_OUTPUT="/mnt/Building/infected-kernel/out"
 export ZIP_DIR="/mnt/Building/AnyKernel3"
 export ZIP_OUT_DIR="/mnt/Building/Out_Zips"
+git submodule init
+git submodule update
 make mrproper
 rm -rf out
 export PATH="/home/infected_/bin:/home/infected_/platform-tools:/mnt/Building/proton-clang/bin:$PATH"
@@ -10,12 +12,12 @@ export USE_CCACHE=1
 export ARCH=arm64
 export DTC_EXT=dtc
 #export DTBIMAGE="dtb"
-export VARIANT="OP8-OOS-r01"
+export VARIANT="OP8-OOS-r04"
 export HASH=`git rev-parse --short=4 HEAD`
 export KERNEL_ZIP="$VARIANT-$HASH"
 export LOCALVERSION=~`echo $KERNEL_ZIP`
 make O=$KBUILD_OUTPUT CC=clang instantnoodle_defconfig
-make -j$(nproc --all) O=$KBUILD_OUTPUT CC=clang CROSS_COMPILE=/mnt/Building/linaro_gcc_prebuilts-gcc-linaro-12.0.0-2021.10-x86_64_aarch64-linux-gnu/bin/aarch64-linux-gnu- CROSS_COMPILE_COMPAT=/mnt/Building/gcc-arm-10.3-2021.07-x86_64-arm-none-eabi/bin/arm-none-eabi-
+make -j$(nproc --all) O=$KBUILD_OUTPUT CC=clang CROSS_COMPILE=/mnt/Building/linaro_aarch64-linux-gnu/bin/aarch64-linux-gnu- CROSS_COMPILE_COMPAT=/mnt/Building/gcc-arm-10.3-2021.07-x86_64-arm-none-eabi/bin/arm-none-eabi-
 cp -v $KBUILD_OUTPUT/arch/arm64/boot/Image.gz-dtb $ZIP_DIR/Image.gz-dtb
 cd $ZIP_DIR
 zip -r9 $VARIANT-$HASH.zip *
