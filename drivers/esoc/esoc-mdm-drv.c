@@ -11,6 +11,8 @@
 #include "esoc.h"
 #include "esoc-mdm.h"
 #include "mdm-dbg.h"
+#include <linux/oem/boot_mode.h>
+#include <linux/oem/oem_force_dump.h>
 
 /* Default number of powerup trial requests per session */
 #define ESOC_DEF_PON_REQ	3
@@ -56,6 +58,13 @@ struct mdm_drv {
 #define to_mdm_drv(d)	container_of(d, struct mdm_drv, cmd_eng)
 
 #define S3_RESET_DELAY_MS	1000
+
+bool oem_twice_modemdump_en;
+bool oem_get_twice_modemdump_state(void)
+{
+	return oem_twice_modemdump_en;
+}
+EXPORT_SYMBOL(oem_get_twice_modemdump_state);
 
 static void esoc_client_link_power_off(struct esoc_clink *esoc_clink,
 							unsigned int flags);
@@ -420,7 +429,13 @@ static int mdm_handle_boot_fail(struct esoc_clink *esoc_clink, u8 *pon_trial)
 		break;
 	case BOOT_FAIL_ACTION_PANIC:
 		esoc_mdm_log("Calling panic!!\n");
-		panic("Panic requested on external modem boot failure\n");
+		if (get_small_board_1_absent() == 0 &&
+		    get_small_board_2_absent() == 0) {
+			send_msg_sync_mdm_dump();
+			get_mdm_umount_state();
+			panic("Panic requested on external modem boot failure\n");
+		} else
+			pr_err("Panic requested on external modem boot failure\n");
 		break;
 	case BOOT_FAIL_ACTION_NOP:
 		esoc_mdm_log("Leaving the modem in its curent state\n");
@@ -448,6 +463,7 @@ static int mdm_subsys_powerup(const struct subsys_desc *crashed_subsys)
 	const struct esoc_clink_ops * const clink_ops = esoc_clink->clink_ops;
 	int timeout = INT_MAX;
 	u8 pon_trial = 0;
+	oem_twice_modemdump_en = false;
 
 	esoc_mdm_log("Powerup request from SSR\n");
 
@@ -518,6 +534,12 @@ static int mdm_subsys_powerup(const struct subsys_desc *crashed_subsys)
 			"Boot failed. Doing cleanup and attempting to retry\n");
 			pon_trial++;
 			mdm_subsys_retry_powerup_cleanup(esoc_clink, 0);
+			// oem sdx5x modem dump checkpoint
+			if (oem_get_download_mode() && oem_get_modemdump_mode()) {
+				pr_err("[MDM] Trigger oem twice modemdump\n");
+				esoc_mdm_log("[MDM] Trigger oem twice modemdump\n");
+				oem_twice_modemdump_en = true;
+			}
 		} else if (mdm_drv->pon_state == PON_SUCCESS) {
 			break;
 		}
@@ -550,6 +572,21 @@ static int mdm_subsys_ramdumps(int want_dumps,
 	return 0;
 }
 
+static void mdm_force_reset(const struct subsys_desc *mdm_subsys)
+{
+	struct esoc_clink *esoc_clink =
+				container_of(mdm_subsys,
+						struct esoc_clink,
+							subsys);
+	struct mdm_ctrl *mdm = get_esoc_clink_data(esoc_clink);
+
+	esoc_mdm_log("[OEM] MDM force reset\n");
+
+	if (mdm->pon_ops->soft_reset)
+		mdm->pon_ops->soft_reset(mdm, true);
+}
+
+
 static int mdm_register_ssr(struct esoc_clink *esoc_clink)
 {
 	struct subsys_desc *subsys = &esoc_clink->subsys;
@@ -557,6 +594,7 @@ static int mdm_register_ssr(struct esoc_clink *esoc_clink)
 	subsys->shutdown = mdm_subsys_shutdown;
 	subsys->ramdump = mdm_subsys_ramdumps;
 	subsys->powerup = mdm_subsys_powerup;
+	subsys->force_reset = mdm_force_reset;
 	subsys->crash_shutdown = mdm_crash_shutdown;
 	return esoc_clink_register_ssr(esoc_clink);
 }
