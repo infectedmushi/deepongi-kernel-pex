@@ -350,32 +350,6 @@ int get_pkt_index(struct cvp_hal_session_cmd_pkt *hdr)
 	return -EINVAL;
 }
 
-int set_feature_bitmask(int pkt_idx, unsigned long *bitmask)
-{
-	if (!bitmask) {
-		dprintk(CVP_ERR, "%s: invalid bitmask\n", __func__);
-		return -EINVAL;
-	}
-
-	if (cvp_hfi_defs[pkt_idx].type == HFI_CMD_SESSION_CVP_DME_FRAME) {
-		set_bit(DME_BIT_OFFSET, bitmask);
-		return 0;
-	}
-
-	if (cvp_hfi_defs[pkt_idx].type == HFI_CMD_SESSION_CVP_ICA_FRAME) {
-		set_bit(ICA_BIT_OFFSET, bitmask);
-		return 0;
-	}
-
-	if (cvp_hfi_defs[pkt_idx].type == HFI_CMD_SESSION_CVP_FD_FRAME) {
-		set_bit(FD_BIT_OFFSET, bitmask);
-		return 0;
-	}
-
-	dprintk(CVP_ERR, "%s: invalid pkt_idx %d\n", __func__, pkt_idx);
-	return -EINVAL;
-}
-
 int get_hfi_version(void)
 {
 	struct msm_cvp_core *core;
@@ -826,13 +800,17 @@ static int __read_queue(struct cvp_iface_q_info *qinfo, u8 *packet,
 		 */
 		mb();
 		*pb_tx_req_is_set = 0;
-		spin_unlock(&qinfo->hfi_lock);
-		dprintk(CVP_DBG,
+		if (write_idx != queue->qhdr_write_idx) {
+			queue->qhdr_rx_req = 0;
+		} else {
+			spin_unlock(&qinfo->hfi_lock);
+			dprintk(CVP_DBG,
 			"%s queue is empty, rx_req = %u, tx_req = %u, read_idx = %u\n",
 			receive_request ? "message" : "debug",
 			queue->qhdr_rx_req, queue->qhdr_tx_req,
 			queue->qhdr_read_idx);
-		return -ENODATA;
+			return -ENODATA;
+		}
 	}
 
 	read_ptr = (u32 *)((qinfo->q_array.align_virtual_addr) +
@@ -876,7 +854,7 @@ static int __read_queue(struct cvp_iface_q_info *qinfo, u8 *packet,
 		rc = -ENODATA;
 	}
 
-	if (read_idx != write_idx)
+	if (new_read_idx != queue->qhdr_write_idx)
 		queue->qhdr_rx_req = 0;
 	else
 		queue->qhdr_rx_req = receive_request;
@@ -4556,7 +4534,7 @@ static void power_off_iris2(struct iris_hfi_device *device)
 static inline int __resume(struct iris_hfi_device *device)
 {
 	int rc = 0;
-	u32 flags = 0;
+	u32 flags = 0, reg_gdsc, reg_cbcr;
 
 	if (!device) {
 		dprintk(CVP_ERR, "Invalid params: %pK\n", device);
@@ -4574,6 +4552,12 @@ static inline int __resume(struct iris_hfi_device *device)
 		dprintk(CVP_ERR, "Failed to power on cvp\n");
 		goto err_iris_power_on;
 	}
+
+	reg_gdsc = __read_register(device, CVP_CC_MVS1C_GDSCR);
+	reg_cbcr = __read_register(device, CVP_CC_MVS1C_CBCR);
+	if (!(reg_gdsc & 0x80000000) || (reg_cbcr & 0x80000000))
+		dprintk(CVP_ERR, "CVP power on failed gdsc %x cbcr %x\n",
+					reg_gdsc, reg_cbcr);
 
 	/* Reboot the firmware */
 	rc = __tzbsp_set_cvp_state(TZ_SUBSYS_STATE_RESUME);

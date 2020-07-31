@@ -6,6 +6,8 @@
 #ifndef __H_CVP_HFI_HELPER_H__
 #define __H_CVP_HFI_HELPER_H__
 
+#include <linux/dma-mapping.h>
+
 #define HFI_COMMON_BASE				(0)
 #define HFI_DOMAIN_BASE_COMMON		(HFI_COMMON_BASE + 0)
 #define HFI_DOMAIN_BASE_CVP			(HFI_COMMON_BASE + 0x04000000)
@@ -285,11 +287,10 @@ struct cvp_hfi_client {
 	u32 transaction_id;
 	u32 data1;
 	u32 data2;
-	u32 kdata1;
-	u32 kdata2;
+	u64 kdata;
 	u32 reserved1;
 	u32 reserved2;
-};
+} __packed;
 
 struct cvp_hfi_client_d {
 	u32 transaction_id;
@@ -317,7 +318,7 @@ struct cvp_hfi_cmd_session_set_buffers_packet {
 	u32 session_id;
 	struct cvp_hfi_client client_data;
 	struct cvp_hfi_buf_type buf_type;
-};
+} __packed;
 
 struct cvp_hfi_cmd_session_set_buffers_packet_d {
 	u32 size;
@@ -337,7 +338,7 @@ struct cvp_session_release_buffers_packet {
 	u32 buffer_type;
 	u32 num_buffers;
 	u32 buffer_idx;
-};
+} __packed;
 
 struct cvp_session_release_buffers_packet_d {
 	u32 size;
@@ -355,7 +356,7 @@ struct cvp_hfi_cmd_session_hdr {
 	u32 session_id;
 	struct cvp_hfi_client client_data;
 	u32 stream_idx;
-};
+} __packed;
 
 struct cvp_hfi_msg_session_hdr {
 	u32 size;
@@ -364,7 +365,7 @@ struct cvp_hfi_msg_session_hdr {
 	u32 error_type;
 	struct cvp_hfi_client client_data;
 	u32 stream_idx;
-};
+} __packed;
 
 struct cvp_hfi_msg_session_hdr_d {
 	u32 size;
@@ -415,7 +416,7 @@ struct cvp_hfi_msg_session_op_cfg_packet {
 	struct cvp_hfi_client client_data;
 	u32 stream_idx;
 	u32 op_conf_id;
-};
+} __packed;
 
 struct cvp_hfi_msg_release_buffer_ref_event_packet {
 	u32 packet_buffer;
@@ -494,5 +495,39 @@ struct cvp_hfi_cmd_sys_test_ssr_packet {
 	u32 packet_type;
 	u32 trigger_type;
 };
+
+struct cvp_buf_type {
+    s32 fd;
+    u32 size;
+    u32 offset;
+    u32 flags;
+    union {
+        struct dma_buf *dbuf;
+        struct {
+            u32 reserved1;
+            u32 reserved2;
+        };
+    } __attribute__((packed));
+} __attribute__((packed));
+
+struct cvp_hfi_msg_dme_pkt {
+    u32 size;
+    u32 packet_type;
+    u32 session_id;
+    u32 error_type;
+    struct cvp_hfi_client client_data;
+    u32 stream_idx;
+    u32 skipmv;
+    struct cvp_buf_type srcbuffer;
+    struct cvp_buf_type srcctxbuffer;
+    struct cvp_buf_type refbuffer;
+    struct cvp_buf_type refctxbuffer;
+    struct cvp_buf_type statsbuffer;
+    u32 fullreswidth;
+    u32 fullresheight;
+    u32 processwidth;
+    u32 processheight;
+    u32 confidence;
+} __attribute__((packed));
 
 #endif
