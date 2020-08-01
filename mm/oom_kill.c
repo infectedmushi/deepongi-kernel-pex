@@ -1143,11 +1143,17 @@ static void oom_kill_process(struct oom_control *oc, const char *message,
 	}
 	task_unlock(p);
 
-	if (!quiet && __ratelimit(&oom_rs))
+	if ((!quiet && __ratelimit(&oom_rs)) || (!strcmp("system_server", p->comm)))
 		dump_header(oc, p);
 
 	pr_err("%s: Kill process %d (%s) score %u or sacrifice child\n",
 		message, task_pid_nr(p), p->comm, points);
+
+	if (!strcmp("system_server", p->comm)) {
+		pr_err("%s: Kernel try to kill (%s) process, I prevent it.\n",
+				message, p->comm);
+		panic("Out of memory: panic on oom!!!\n");
+	}
 
 	/*
 	 * If any of p's children has a different mm and is eligible for kill,
