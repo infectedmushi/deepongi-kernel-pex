@@ -2100,6 +2100,10 @@ static ssize_t ufshcd_clkscale_enable_store(struct device *dev,
 		return -EINVAL;
 
 	value = !!value;
+
+	if (!value)
+		value = !value;
+
 	if (value == hba->clk_scaling.is_allowed)
 		goto out;
 
