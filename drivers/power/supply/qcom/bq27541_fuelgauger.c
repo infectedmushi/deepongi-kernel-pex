@@ -153,7 +153,7 @@
 #define BQ27541_SUBCMD_CAL_MODE  0x0040
 #define BQ27541_SUBCMD_RESET     0x0041
 #define ZERO_DEGREE_CELSIUS_IN_TENTH_KELVIN   (-2731)
-#define BQ27541_INIT_DELAY   ((HZ)*1)
+#define BQ27541_INIT_DELAY   ((250)*1)
 #define SET_BQ_PARAM_DELAY_MS 6000
 
 
@@ -1363,7 +1363,7 @@ static void bq27541_hw_config(struct work_struct *work)
 		/* Add for retry when config fail */
 		di->retry_count--;
 		if (di->retry_count > 0)
-			schedule_delayed_work(&di->hw_config, HZ);
+			schedule_delayed_work(&di->hw_config, 250);
 		else
 			bq27541_registered = true;
 
