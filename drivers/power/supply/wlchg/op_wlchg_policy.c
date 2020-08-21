@@ -1539,7 +1539,7 @@ static int wlchg_cmd_process(struct op_chg_chip *chip)
 				cmd_info->cmd = 0;
 			}
 		}
-		chg_status->send_msg_timer = jiffies + HZ;
+		chg_status->send_msg_timer = jiffies + 250;
 	}
 
 	return 0;
@@ -2114,7 +2114,7 @@ static int pmic_chan_check_skin_temp(struct op_chg_chip *chip)
 	}
 
 	if (wait_timeout == 0)
-		wait_timeout = jiffies - HZ;
+		wait_timeout = jiffies - 250;
 
 	rc = wlchg_get_skin_temp(&skin_temp);
 	if (rc < 0)
@@ -2132,7 +2132,7 @@ static int pmic_chan_check_skin_temp(struct op_chg_chip *chip)
 		chg_info("skin temp(=%d) too high\n", skin_temp);
 		vote(normal_charger->usb_icl_votable, WLCH_SKIN_VOTER, true,
 		     chg_param->epp_curr_step[chg_status->epp_curr_step] * 1000);
-		wait_timeout = jiffies + 30 * HZ;
+		wait_timeout = jiffies + 30 * 250;
 	} else if (skin_temp <= chg_param->epp_skin_temp_min) {
 		if (chg_status->epp_curr_step < 1) {
 			if (is_client_vote_enabled(normal_charger->usb_icl_votable, WLCH_SKIN_VOTER))
@@ -2143,7 +2143,7 @@ static int pmic_chan_check_skin_temp(struct op_chg_chip *chip)
 		chg_info("skin temp(=%d) reduce\n", skin_temp);
 		vote(normal_charger->usb_icl_votable, WLCH_SKIN_VOTER, true,
 		     chg_param->epp_curr_step[chg_status->epp_curr_step] * 1000);
-		wait_timeout = jiffies + 30 * HZ;
+		wait_timeout = jiffies + 30 * 250;
 	}
 
 	return 0;
@@ -2167,7 +2167,7 @@ static int fastchg_check_skin_temp(struct op_chg_chip *chip)
 	}
 
 	if (wait_timeout == 0)
-		wait_timeout = jiffies - HZ;
+		wait_timeout = jiffies - 250;
 
 	rc = wlchg_get_skin_temp(&skin_temp);
 	if (rc < 0)
@@ -2195,7 +2195,7 @@ static int fastchg_check_skin_temp(struct op_chg_chip *chip)
 
 		vote(chip->wlcs_fcc_votable, SKIN_VOTER, true,
 			 ffc_chg->ffc_step[chg_status->fastchg_curr_step].curr_ua);
-		wait_timeout = jiffies + 30 * HZ;
+		wait_timeout = jiffies + 30 * 250;
 	} else if (skin_temp <= chg_param->fastchg_skin_temp_min) {
 		if (chg_status->fastchg_curr_step <= chg_status->fastchg_level)
 			return 0;
@@ -2204,7 +2204,7 @@ static int fastchg_check_skin_temp(struct op_chg_chip *chip)
 			chg_param->fastchg_skin_temp_min);
 		vote(chip->wlcs_fcc_votable, SKIN_VOTER, true,
 			 ffc_chg->ffc_step[chg_status->fastchg_curr_step].curr_ua);
-		wait_timeout = jiffies + 30 * HZ;
+		wait_timeout = jiffies + 30 * 250;
 	}
 
 	return 0;
@@ -2323,13 +2323,13 @@ static void fastchg_switch_next_step(struct op_chg_chip *chip)
 	if (ffc_chg->ffc_step[chg_status->fastchg_level].need_wait == 0) {
 		if (chip->batt_volt >= batt_vol_max) {
 			/* Must delay 1 sec and wait for the batt voltage to drop */
-			ffc_chg->ffc_wait_timeout = jiffies + HZ * 5;
+			ffc_chg->ffc_wait_timeout = jiffies + 250 * 5;
 		} else {
 			ffc_chg->ffc_wait_timeout = jiffies;
 		}
 	} else {
 		/* Delay 1 minute and wait for the temperature to drop */
-		ffc_chg->ffc_wait_timeout = jiffies + HZ * 60;
+		ffc_chg->ffc_wait_timeout = jiffies + 250 * 60;
 	}
 
 	chg_status->fastchg_level++;
@@ -2595,7 +2595,7 @@ static void fastchg_cep_adj(struct op_chg_chip *chip)
 				cep_ok_count = 0;
 				chg_status->cep_err_flag = false;
 				chg_status->wait_cep_stable = true;
-				chg_status->cep_ok_wait_timeout = jiffies + CEP_OK_TIMEOUT_MAX * HZ;
+				chg_status->cep_ok_wait_timeout = jiffies + CEP_OK_TIMEOUT_MAX * 250;
 				wait_cep_count = 0;
 				vote(chip->wlcs_fcc_votable, CEP_VOTER, false, 0);
 			}
@@ -2624,7 +2624,7 @@ static void fastchg_cep_adj(struct op_chg_chip *chip)
 						curr_ua = FASTCHG_CURR_MIN_UA;
 					vote(chip->wlcs_fcc_votable, CEP_VOTER, true, curr_ua);
 				}
-				chg_status->cep_ok_wait_timeout = jiffies + CEP_OK_TIMEOUT_MAX * HZ;
+				chg_status->cep_ok_wait_timeout = jiffies + CEP_OK_TIMEOUT_MAX * 250;
 			}
 		}
 	} else {
@@ -3036,7 +3036,7 @@ static int fastchg_startup_process(struct op_chg_chip *chip)
 			cep_err_count = 0;
 			chg_err("Cannot rise to target voltage, exit fast charge\n");
 			chg_status->fastchg_retry_count++;
-			chg_status->fastchg_retry_timer = jiffies + 300 * HZ; //5 min
+			chg_status->fastchg_retry_timer = jiffies + 300 * 250; //5 min
 			vote(chip->fastchg_disable_votable, STARTUP_CEP_VOTER, true, 0);
 			chg_status->charge_status = WPC_CHG_STATUS_FAST_CHARGING_EXIT;
 		}
