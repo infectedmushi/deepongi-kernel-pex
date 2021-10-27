@@ -6,7 +6,7 @@ export USE_CCACHE=1
 export ARCH=arm64
 make clean && make mrproper
 # make installclean
-# rm -rf out
+rm -rf out
 time make O=$KBUILD_OUTPUT CC=clang instantnoodle_defconfig
 export DTC_EXT=dtc
 export VARIANT="OP8-OOS-R"
