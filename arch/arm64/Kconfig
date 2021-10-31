@@ -1704,6 +1704,22 @@ config ARCH_HIBERNATION_HEADER
 config ARCH_SUSPEND_POSSIBLE
 	def_bool y
 
+
+config ARCH_SUPPORTS_SHADOW_CALL_STACK
+	def_bool y
+
+config CC_HAVE_SHADOW_CALL_STACK
+	def_bool y
+
+config ARCH_SUPPORTS_LTO_CLANG
+	def_bool y
+
+config ARCH_SUPPORTS_THINLTO
+	def_bool y
+
+config COMPAT_VDSO
+        def_bool y
+
 endmenu
 
 menu "CPU Power Management"
