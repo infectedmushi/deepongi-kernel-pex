@@ -11,8 +11,8 @@ export PATH="/home/infected_/bin:/home/infected_/platform-tools:/mnt/Building/pr
 export USE_CCACHE=1
 export ARCH=arm64
 export DTC_EXT=dtc
-export DTBIMAGE="dtb"
-export VARIANT="infected-kernel-r04"
+#export DTBIMAGE="dtb"
+export VARIANT="OP8-OOS-r04"
 export HASH=`git rev-parse --short=4 HEAD`
 export KERNEL_ZIP="$VARIANT-$HASH"
 export LOCALVERSION=~`echo $KERNEL_ZIP`
