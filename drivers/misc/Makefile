@@ -79,3 +79,5 @@ obj-$(CONFIG_FPR_FPC)		+= fpr_FingerprintCard/
 obj-y                           += qrc/
 
 obj-$(CONFIG_MACH_ONEPLUS_SM8250) += oneplus/
+
+obj-$(CONFIG_FORCE_FAST_CHARGE) += fastchg.o
